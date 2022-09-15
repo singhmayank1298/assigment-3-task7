@@ -1,38 +1,72 @@
-import React, { useState ,useEffect} from 'react';
+import React, { useState ,useEffect,useReducer} from 'react';
 
 import Card from '../UI/Card/Card';
 import classes from './Login.module.css';
 import Button from '../UI/Button/Button';
 
+const emailReducer=(state,action)=>{
+  console.log(state,action)
+  if(action.type==='USER_INPUT'){
+ return( {value: action.val,isValid: action.val.includes('@')})
+  }
+  if(action.type==='INPUT_BLUR'){
+    return {value: state.value,isValid: state.value.includes('@')}
+     }
+  return{value:'',isValid:null}
+}
+
+const passwordReducer=(state,action)=>{
+  console.log(state,action)
+  if(action.type==="pass_word"){
+    return {value:action.value,isValid:action.value.trim().length>6}
+  }
+  if(action.type==="pass_BLUR"){
+    return{value:state.value,isValid:state.value.trim().length>6}
+  }
+ return {value:"",isValid:null}
+}
+
 const Login = (props) => {
   const [enteredCollage, setEnteredCollage] = useState('');
   const [collageIsValid, setcollageIsValid] = useState();
-  const [enteredEmail, setEnteredEmail] = useState('');
-  const [emailIsValid, setEmailIsValid] = useState();
-  const [enteredPassword, setEnteredPassword] = useState('');
-  const [passwordIsValid, setPasswordIsValid] = useState();
+  // const [enteredEmail, setEnteredEmail] = useState('');
+  // const [emailIsValid, setEmailIsValid] = useState();
+  // const [enteredPassword, setEnteredPassword] = useState('');
+  // const [passwordIsValid, setPasswordIsValid] = useState();
   const [formIsValid, setFormIsValid] = useState(false);
 
-  useEffect(()=>{ // vary imortent this will run only one time when first time page lode so you have to use dependence to run tjis function again
-    console.log("Checking for validity")
-setFormIsValid(
-      enteredEmail.includes('@') && enteredPassword.trim().length > 6 && enteredCollage.trim().length>5
-    );
-  },[enteredEmail,enteredPassword, enteredCollage])
+
+const[emailState,dispatchEmail]= useReducer(emailReducer,{value:'',isValid:null})
+const[password,dispatchPassword]=useReducer(passwordReducer, {value:'',isValid:null})
+
+const { isValid: emailIsValid } = emailState;
+  const { isValid: passwordIsValid } = password;
+
+  useEffect(() => {
+    const identifier = setTimeout(() => {
+      console.log('Checking form validity!');
+      setFormIsValid(emailIsValid && passwordIsValid);
+    }, 500);
+
+    return () => {
+      console.log('CLEANUP');
+      clearTimeout(identifier);
+    };
+  }, [emailIsValid, passwordIsValid]);
 
   const emailChangeHandler = (event) => {
-    setEnteredEmail(event.target.value);
+    dispatchEmail({type:'USER_INPUT',val: event.target.value})
 
-    // setFormIsValid(
-    //   event.target.value.includes('@') && enteredPassword.trim().length > 6
+    // setFormIsValid( //changing state depend on another state this approch is wrong use reducer approch
+    //   event.target.value.includes('@') && password.isValid // hear if the state change depend on anothe state always use function
     // );
   };
 
   const passwordChangeHandler = (event) => {
-    setEnteredPassword(event.target.value);
+     dispatchPassword({type:"pass_word", value:event.target.value})
 
     // setFormIsValid(
-    //   event.target.value.trim().length > 6 && enteredEmail.includes('@')
+    //   event.target.value.trim().length>6 && emailState.isValid
     // );
   };
   const collageChangeHandler = (event) => {
@@ -40,7 +74,7 @@ setFormIsValid(
  
   }
   const validateEmailHandler = () => {
-    setEmailIsValid(enteredEmail.includes('@'));
+    dispatchEmail({type:'INPUT_BLUR'})
   };
 
   const validatecollageHandler = () => {
@@ -48,12 +82,12 @@ setFormIsValid(
   };
 
   const validatePasswordHandler = () => {
-    setPasswordIsValid(enteredPassword.trim().length > 6);
+    dispatchPassword({type:"pass_BLUR"})
   };
 
   const submitHandler = (event) => {
     event.preventDefault();
-    props.onLogin(enteredEmail, enteredPassword);
+    props.onLogin(emailState.value, password.value);
   };
 
   return (
@@ -61,28 +95,28 @@ setFormIsValid(
       <form onSubmit={submitHandler}>
         <div
           className={`${classes.control} ${
-            emailIsValid === false ? classes.invalid : ''
+            emailState.isValid === false ? classes.invalid : ''
           }`}
         >
           <label htmlFor="email">E-Mail</label>
           <input
             type="email"
             id="email"
-            value={enteredEmail}
+            value={emailState.value}
             onChange={emailChangeHandler}
             onBlur={validateEmailHandler}
           />
         </div>
         <div
           className={`${classes.control} ${
-            passwordIsValid === false ? classes.invalid : ''
+            password.isValid === false ? classes.invalid : ''
           }`}
         >
           <label htmlFor="password">Password</label>
           <input
             type="password"
             id="password"
-            value={enteredPassword}
+            value={password.value}
             onChange={passwordChangeHandler}
             onBlur={validatePasswordHandler}
           />
